@@ -26,4 +26,3 @@ export default function MenuList() {
       margin: 5,
     },
   });
-
