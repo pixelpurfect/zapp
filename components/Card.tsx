@@ -5,7 +5,7 @@ interface CardProps {
   customStyles: any; // Accept custom styles as a prop
 }
 
-const function  Card({ customStyles }: CardProps) {
+const fucntion Card({ customStyles }: CardProps) {
   return (
     <View style={customStyles.cardContainer}>
       {/* Left side text */}
