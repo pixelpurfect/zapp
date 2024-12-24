@@ -1,47 +1,60 @@
-import React from "react";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
-import Badge from "@mui/material/Badge";
-import { styled } from '@mui/material/styles';
-import NotificationsOutlinedIcon from "@mui/icons-material/NotificationsOutlined";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Link } from 'expo-router'; // Import Link from expo-router
+import Logo from './Logo';
 
 const Navbar = () => {
   return (
-    <AppBar position="static" sx={{ backgroundColor: "#1e293b", padding: "0 20px" }}>
-      <Toolbar>
-        {/* Logo/Brand Name */}
-        <Typography
-          variant="h6"
-          sx={{
-            flexGrow: 1,
-            fontWeight: "bold",
-            color: "#ffffff",
-            cursor: "pointer",
-          }}
-        >
-          MyBrand
-        </Typography>
+    <View style={styles.navbarContainer}>
+      {/* Logo in the Center */}
+      <View style={styles.logoContainer}>
+        <Logo /> {/* Replace with your Logo component */}
+      </View>
 
-        {/* Notification Icon */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <IconButton sx={{ color: "#ffffff" }}>
-            <Badge badgeContent={3} color="error">
-              <NotificationsOutlinedIcon/>
-            </Badge>
-          </IconButton>
+      {/* Icons and Links */}
+      <View style={styles.iconContainer}>
+        {/* Cart Button with Link for navigation */}
+        <Link href="./Ordersummarycard">
+          <View style={styles.iconButton}>
+            <Text style={styles.iconText}>🛒</Text> {/* Cart emoji */}
+          </View>
+        </Link>
 
-          {/* Cart Button */}
-          <IconButton sx={{ color: "#ffffff" }}>
-            <ShoppingCartIcon />
-          </IconButton>
-        </Box>
-      </Toolbar>
-    </AppBar>
+        {/* Notification Bell with Link for navigation */}
+        <Link href="./Notification">
+          <View style={styles.iconButton}>
+            <Text style={styles.iconText}>🔔</Text> {/* Bell emoji */}
+          </View>
+        </Link>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  navbarContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+    padding: 10,
+  },
+  logoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    marginLeft: 15,
+  },
+  iconText: {
+    color: '#fff',
+    fontSize: 24,
+  },
+});
 
 export default Navbar;
