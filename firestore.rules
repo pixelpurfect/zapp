@@ -1,0 +1,9 @@
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Match the specific document path for mail queries
+    match /demo/mailqueries/queries/{docId} {
+      // Allow read and write operations
+      allow read, write: if true;
+    }
+  }
+}

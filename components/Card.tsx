@@ -4,8 +4,7 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 interface CardProps {
   customStyles: any; // Accept custom styles as a prop
 }
-
-const fucntion Card({ customStyles }: CardProps) {
+const function Card({ customStyles }: CardProps) {
   return (
     <View style={customStyles.cardContainer}>
       {/* Left side text */}

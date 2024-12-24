@@ -53,7 +53,7 @@ export default function Index() {
   const handleTouch = () => {
     router.push('/HomeScreen'); // Navigate to HomeScreen.tsx
   };
-
+  // EmailVerificationScreen
   return (
     <TouchableWithoutFeedback onPress={handleTouch}>
       <View style={styles.container}>
