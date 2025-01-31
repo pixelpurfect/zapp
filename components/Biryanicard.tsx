@@ -1,49 +1,73 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
-import { FontAwesome } from "@expo/vector-icons"; // For the star icon
+import React, { useState } from "react";
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { FontAwesome } from "@expo/vector-icons";
 
-// BiryaniCard Component
-const BiryaniCard: React.FC<{
+type FoodItem = {
+  id: number;
   image: string;
   subtitle: string;
   title: string;
   description: string;
   rating: number;
   price: number;
-}> = ({ image, subtitle, title, description, rating, price }) => {
+};
+
+type CartItem = {
+  id: number;
+  title: string;
+  price: number;
+  quantity: number;
+};
+
+// BiryaniCard Component
+const BiryaniCard: React.FC<{
+  item: FoodItem;
+  onAddToCart: (item: FoodItem) => void;
+}> = ({ item, onAddToCart }) => {
   return (
     <View style={styles.card}>
       {/* Image */}
-      <Image 
-        source={{ uri: image }} 
-        style={styles.image} 
-      />
+      <Image source={{ uri: item.image }} style={styles.image} />
       {/* Text Content */}
       <View style={styles.textContainer}>
         {/* Title */}
-        <Text style={styles.subtitle}>{subtitle}</Text>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.subtitle}>{item.subtitle}</Text>
+        <Text style={styles.title}>{item.title}</Text>
         {/* Description */}
-        <Text style={styles.description}>{description}</Text>
-        {/* Rating and Price */}
+        <Text style={styles.description}>{item.description}</Text>
+        {/* Rating, Price, and Add Button */}
         <View style={styles.footer}>
+          {/* Rating */}
           <View style={styles.rating}>
             <FontAwesome name="star" size={18} color="#f0c02f" />
-            <Text style={styles.ratingText}>{rating}</Text>
+            <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
-          <Text style={styles.price}>{`₹${price} /-`}</Text>
+          {/* Price */}
+          <Text style={styles.price}>{`₹${item.price} /-`}</Text>
+          {/* Add to Cart Button */}
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => onAddToCart(item)}
+          >
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 };
 
-// BiryaniCardScreen to render multiple cards
+// Ordersummarycard Component
+
+
+// BiryaniCardScreen
 const BiryaniCardScreen: React.FC = () => {
-  // Example data for multiple cards
-  const biryaniData = [
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
+  const biryaniData: FoodItem[] = [
     {
-      image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fpngtree.com%2Ffreebackground%2Fchicken-biryani-served-in-a-bowl_1461512.html&psig=AOvVaw3YP1Lp2JVpSZ59TL_5iN-f&ust=1735037431997000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCIDX8p_cvYoDFQAAAAAdAAAAABAE",
+      id: 1,
+      image: "https://via.placeholder.com/100",
       subtitle: "CLASSIC BIRYANI, JAVA GREEN",
       title: "Chicken Biryani",
       description:
@@ -52,7 +76,8 @@ const BiryaniCardScreen: React.FC = () => {
       price: 100,
     },
     {
-      image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fpngtree.com%2Ffreebackground%2Fchicken-biryani-served-in-a-bowl_1461512.html&psig=AOvVaw3YP1Lp2JVpSZ59TL_5iN-f&ust=1735037431997000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCIDX8p_cvYoDFQAAAAAdAAAAABAE",
+      id: 2,
+      image: "https://via.placeholder.com/100",
       subtitle: "CLASSIC BIRYANI, JAVA GREEN",
       title: "Mutton Biryani",
       description:
@@ -61,7 +86,8 @@ const BiryaniCardScreen: React.FC = () => {
       price: 180,
     },
     {
-      image: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fpngtree.com%2Ffreebackground%2Fchicken-biryani-served-in-a-bowl_1461512.html&psig=AOvVaw3YP1Lp2JVpSZ59TL_5iN-f&ust=1735037431997000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCIDX8p_cvYoDFQAAAAAdAAAAABAE",
+      id: 3,
+      image: "https://via.placeholder.com/100",
       subtitle: "CLASSIC BIRYANI, JAVA GREEN",
       title: "Veg Biryani",
       description:
@@ -71,18 +97,26 @@ const BiryaniCardScreen: React.FC = () => {
     },
   ];
 
+  const handleAddToCart = (item: FoodItem) => {
+    setCartItems((prevCart) => {
+      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+      if (existingItem) {
+        return prevCart.map((cartItem) =>
+          cartItem.id === item.id
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        );
+      } else {
+        return [...prevCart, { id: item.id, title: item.title, price: item.price, quantity: 1 }];
+      }
+    });
+    Alert.alert("Added to Cart", `${item.title} has been added to your cart.`);
+  };
+
   return (
     <ScrollView style={styles.screenContainer}>
-      {biryaniData.map((item, index) => (
-        <BiryaniCard
-          key={index}
-          image={item.image}
-          subtitle={item.subtitle}
-          title={item.title}
-          description={item.description}
-          rating={item.rating}
-          price={item.price}
-        />
+      {biryaniData.map((item) => (
+        <BiryaniCard key={item.id} item={item} onAddToCart={handleAddToCart} />
       ))}
     </ScrollView>
   );
@@ -105,6 +139,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     shadowRadius: 10,
     elevation: 5,
+    position: "relative",
   },
   image: {
     width: 100,
@@ -151,6 +186,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
+    textAlign: "center",
+    flex: 1,
+  },
+  addButton: {
+    backgroundColor: "#000",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  cartContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 20,
+  },
+  cartHeader: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+  },
+  cartItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 5,
+  },
+  cartItemText: {
+    fontSize: 14,
+    color: "#555",
+  },
+  cartTotal: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginTop: 10,
+    textAlign: "right",
   },
 });
 

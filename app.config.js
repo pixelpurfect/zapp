@@ -1,4 +1,4 @@
-import 'dotenv/config'; // This loads the .env file
+import 'dotenv/config';
 
 export default {
   expo: {
@@ -7,7 +7,7 @@ export default {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
-    scheme: "myapp",
+    scheme: "myapp",  // This is your app's URL scheme
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
@@ -23,6 +23,9 @@ export default {
       bundler: "metro",
       output: "static",
       favicon: "./assets/images/favicon.png",
+      scripts: [
+        "https://checkout.razorpay.com/v1/checkout.js"
+      ]
     },
     plugins: [
       "expo-router",
@@ -45,8 +48,8 @@ export default {
       FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
       FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
       FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
+      razorpayKeyId: "",  // Replace with your Razorpay test key
+      appUrl: ""  // Using your existing scheme
     },
   },
 };
-
-
