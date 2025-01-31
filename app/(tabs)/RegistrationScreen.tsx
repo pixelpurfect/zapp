@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TextInput, Button, Text, View } from 'react-native';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { auth } from '../../config/firebaseConfig';
+import { auth } from '../../firebase/Config';
 
 const RegistrationScreen = ({ onNavigateToVerification }: { onNavigateToVerification: () => void }) => {
   const [email, setEmail] = useState('');

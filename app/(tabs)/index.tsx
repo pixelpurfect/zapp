@@ -1,13 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Animated, Image, StyleSheet, StatusBar, TouchableWithoutFeedback } from 'react-native';
-import { useRouter } from 'expo-router'; // Import useRouter from expo-router
+import { View, Animated, Image, StyleSheet, StatusBar, Text, ScrollView } from 'react-native';
+import { Link } from 'expo-router'; // Import Link from expo-router
 
 export default function Index() {
   const [currentIndex, setCurrentIndex] = useState(0); // Tracks the current image index
   const opacity = useRef(new Animated.Value(0)).current; // Initial opacity for fade-in effect
-
-  // Router for navigation
-  const router = useRouter();
 
   // Array of images to be shown in slideshow
   const images = [
@@ -49,15 +46,40 @@ export default function Index() {
     return () => clearInterval(interval);
   }, []);
 
-  // Function to handle screen touch (navigation to HomeScreen)
-  const handleTouch = () => {
-    router.push('/HomeScreen'); // Navigate to HomeScreen.tsx
-  };
-  // EmailVerificationScreen
   return (
-    <TouchableWithoutFeedback onPress={handleTouch}>
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+
+      {/* ScrollView around the content that needs to be scrollable */}
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        {/* Navigation links at the top */}
+        <View style={styles.navButtons}>
+          <View style={styles.navButton}>
+            <Link href="/HomeScreen">
+              <Text style={styles.navButtonText}>Go to HomeScreen</Text>
+            </Link>
+          </View>
+          <View style={styles.navButton}>
+            <Link href="/StationHomeScreen">
+              <Text style={styles.navButtonText}>Go to StationHomeScreen</Text>
+            </Link>
+          </View>
+          <View style={styles.navButton}>
+            <Link href="/Printoutspage">
+              <Text style={styles.navButtonText}>Go to PrintHomeScreen</Text>
+            </Link>
+          </View>
+          <View style={styles.navButton}>
+            <Link href="/MainScreen">
+              <Text style={styles.navButtonText}>Go to Addrestaruant</Text>
+            </Link>
+          </View>
+          <View style={styles.navButton}>
+            <Link href="/EmailVerification">
+              <Text style={styles.navButtonText}>sign up email</Text>
+            </Link>
+          </View>
+        </View>
 
         {/* Zapp logo at the top */}
         <Image source={require('../../assets/images/zapp.jpeg')} style={styles.logo} />
@@ -67,8 +89,8 @@ export default function Index() {
           source={images[currentIndex]} // Dynamically change the image based on currentIndex
           style={[styles.mainImage, { opacity }]} // Apply the fade effect to each image
         />
-      </View>
-    </TouchableWithoutFeedback>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -77,21 +99,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'black',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+  },
+  scrollViewContent: {
+    alignItems: 'center',
+    paddingBottom: 20, // Optional: Add padding at the bottom if needed
   },
   logo: {
     width: 150,
     height: 150,
     resizeMode: 'contain',
-    marginTop: 100,
+    marginTop: 50, // Adjusted margin to make room for navigation links
   },
   mainImage: {
     width: '100%',
-    height: '80%',
+    height: 300, // Set height explicitly so the image doesn't stretch too much
     resizeMode: 'cover',
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
     marginTop: 20,
   },
+  navButtons: {
+    width: '80%',
+    alignItems: 'center',
+    backgroundColor: 'transparent', // Ensure the buttons aren't being hidden
+    marginTop: 20, // Space between the navigation and logo/image
+  },
+  navButton: {
+    backgroundColor: '#ff6347', // Tomato color for the button
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 1, // Debugging: Add a border to see if the button is rendering
+    borderColor: '#fff', // Border color to make it visible
+  },
+  navButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
-

@@ -1,65 +1,97 @@
-import React, { useState } from 'react';
-import { TextInput, Button, Text, View } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../config/firebaseConfig';
+import React, { useState } from "react";
+import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import { auth } from "../../firebase/Config"; // Assuming firebase setup is done
+import { signInWithEmailAndPassword } from "firebase/auth";
 
-const LoginScreen = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+const LoginScreen = ({ navigation }: any) => {
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
 
   const handleLogin = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setIsLoggedIn(true);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      if (user.emailVerified) {
+        navigation.navigate("Home"); // Navigate to home screen after login
       } else {
-        setErrorMessage('An unknown error occurred.');
+        Alert.alert("Error", "Please verify your email first.");
+      }
+    } catch (error: unknown) {
+      // Casting error to 'Error' to access message property
+      if (error instanceof Error) {
+        Alert.alert("Error", error.message);
+      } else {
+        Alert.alert("Error", "An unexpected error occurred.");
       }
     }
   };
 
-  const handleLogout = () => {
-    auth.signOut();
-    setIsLoggedIn(false);
-  };
-
   return (
-    <View style={{ padding: 20 }}>
-      {!isLoggedIn ? (
-        <>
-          <Text>Login</Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Enter email"
-            keyboardType="email-address"
-            style={{ borderBottomWidth: 1, marginBottom: 10 }}
-          />
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Enter password"
-            secureTextEntry
-            style={{ borderBottomWidth: 1, marginBottom: 20 }}
-          />
-          {errorMessage ? <Text style={{ color: 'red' }}>{errorMessage}</Text> : null}
-          <Button title="Login" onPress={handleLogin} />
-        </>
-      ) : (
-        <View>
-          <Text>Welcome, you are logged in!</Text>
-          <Button title="Logout" onPress={handleLogout} />
-        </View>
-      )}
+    <View style={styles.container}>
+      <Text style={styles.header}>Login</Text>
+      <TextInput
+        value={email}
+        onChangeText={setEmail}
+        placeholder="Enter Email"
+        keyboardType="email-address"
+        style={styles.input}
+      />
+      <TextInput
+        value={password}
+        onChangeText={setPassword}
+        placeholder="Enter Password"
+        secureTextEntry
+        style={styles.input}
+      />
+      <Button title="Login" onPress={handleLogin} />
+
+      <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
+        <Text style={styles.redirectText}>
+          Don't have an account? Sign Up
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    backgroundColor: "#F8F8F8",
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  input: {
+    backgroundColor: "#fff",
+    padding: 10,
+    marginBottom: 15,
+    borderRadius: 8,
+    fontSize: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  },
+  redirectText: {
+    color: "#007bff",
+    textAlign: "center",
+    marginTop: 15,
+    textDecorationLine: "underline",
+  },
+});
+
 export default LoginScreen;
+
+
+
+
+
 
 
 

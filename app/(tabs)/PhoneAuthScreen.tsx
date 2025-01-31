@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text } from 'react-native';
-import { PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
-import { auth } from '../../config/firebaseConfig';  // Import auth from firebaseConfig
+import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
+import { PhoneAuthProvider, signInWithCredential, RecaptchaVerifier } from 'firebase/auth';
+import { auth } from '../../firebase/Config';  // Import auth from firebaseConfig
 
 const PhoneAuthScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -9,15 +10,21 @@ const PhoneAuthScreen = () => {
   const [code, setCode] = useState('');
   const [isOTPSent, setIsOTPSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const recaptchaVerifier = React.useRef(null);
 
   // Send OTP to the phone number
   const sendOTP = async () => {
     try {
+      if (!recaptchaVerifier.current) {
+        throw new Error('reCAPTCHA verifier not initialized.');
+      }
+
       const phoneProvider = new PhoneAuthProvider(auth);
 
-      // Since we're bypassing reCAPTCHA for testing, we don't need the recaptchaVerifier
+      // Use the recaptchaVerifier for reCAPTCHA challenge
       const verificationId = await phoneProvider.verifyPhoneNumber(
-        phoneNumber, // Ensure the phone number is in E.164 format: "+1234567890"
+        phoneNumber, 
+        recaptchaVerifier.current // Add reCAPTCHA verifier
       );
 
       setVerificationId(verificationId);
@@ -47,8 +54,8 @@ const PhoneAuthScreen = () => {
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text>Phone Authentication</Text>
+    <View style={styles.container}>
+      <Text style={styles.heading}>Phone Authentication</Text>
       {!isOTPSent ? (
         <>
           <TextInput
@@ -56,7 +63,10 @@ const PhoneAuthScreen = () => {
             onChangeText={setPhoneNumber}
             placeholder="Enter phone number"
             keyboardType="phone-pad"
+            style={styles.input}
           />
+          {/* reCAPTCHA Verifier */}
+          <div ref={recaptchaVerifier} />
           <Button title="Send OTP" onPress={sendOTP} />
         </>
       ) : (
@@ -66,15 +76,38 @@ const PhoneAuthScreen = () => {
             onChangeText={setCode}
             placeholder="Enter OTP"
             keyboardType="numeric"
+            style={styles.input}
           />
           <Button title="Verify OTP" onPress={verifyOTP} />
         </>
       )}
 
-      {errorMessage && <Text style={{ color: 'red' }}>{errorMessage}</Text>}
+      {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
     </View>
   );
 };
 
-export default PhoneAuthScreen;
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  input: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingLeft: 10,
+    marginBottom: 15,
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 10,
+  },
+});
 
+export default PhoneAuthScreen;
