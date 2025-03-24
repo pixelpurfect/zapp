@@ -18,7 +18,7 @@ import CategorySlider from '@/components/CategorySlider';
 
 const { width, height } = Dimensions.get('window');
 
-const MAX_ORDERS = 3; // Maximum number of orders a user can accept
+const MAX_ORDERS = 3;
 
 const OrderDashboard = () => {
   const [orders, setOrders] = useState([]);
@@ -37,6 +37,7 @@ const OrderDashboard = () => {
           total: doc.data().total || 0,
           orderDate: doc.data().orderDate || null,
           location: doc.data().location || 'Location not specified',
+          restaurantName: doc.data().restaurantName || 'Unknown Restaurant', // Added restaurant name
         }));
         setOrders(ordersList);
       } catch (error) {
@@ -51,10 +52,7 @@ const OrderDashboard = () => {
     const selectedCount = Object.values(selectedOrders).filter(Boolean).length;
 
     if (!selectedOrders[orderId] && selectedCount >= MAX_ORDERS) {
-      Alert.alert(
-        'Limit Reached',
-        `You can accept a maximum of ${MAX_ORDERS} orders.`
-      );
+      Alert.alert('Limit Reached', `You can accept a maximum of ${MAX_ORDERS} orders.`);
       return;
     }
 
@@ -84,7 +82,6 @@ const OrderDashboard = () => {
       <View style={{ marginTop: -10 }}>
         <CategorySlider />
       </View>
-      {/* Orders List */}
       <FlatList
         contentContainerStyle={styles.listContent}
         data={orders}
@@ -113,11 +110,11 @@ const OrderDashboard = () => {
                 />
                 <Text style={styles.orderId}>Order ID: {item.id}</Text>
               </View>
-              {/* Add Location Display */}
+              {/* Restaurant Name */}
+              <Text style={styles.restaurantName}>🍽 {item.restaurantName}</Text>
+              {/* Location Display */}
               <View style={styles.locationContainer}>
-                <Text style={styles.locationText}>
-                  📍 Location: {item.location}
-                </Text>
+                <Text style={styles.locationText}>📍 {item.location}</Text>
               </View>
               <Text style={styles.items}>
                 Items: {item.items.map((i) => i.title).join(', ') || 'No items listed'}
@@ -128,8 +125,6 @@ const OrderDashboard = () => {
         )}
         ListEmptyComponent={<Text style={styles.emptyText}>No orders found</Text>}
       />
-    
-      {/* Accept Selected Orders Button */}
       <TouchableOpacity style={styles.acceptButton} onPress={navigateToNextPage}>
         <Text style={styles.acceptButtonText}>Accept Selected Orders</Text>
       </TouchableOpacity>
@@ -179,6 +174,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  restaurantName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginBottom: 6,
   },
   locationContainer: {
     backgroundColor: '#2a2a2a',

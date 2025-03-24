@@ -1,63 +1,83 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router"; // For navigation
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db, auth } from '../../firebase/Config';
 
 const Notification = () => {
   const router = useRouter();
+  const [orders, setOrders] = useState([]);
+  const currentUser = auth.currentUser;
 
-  const notifications = [
-    {
-      emoji: "📦", // Emoji replacement for "zapp.png"
-      message: "Your zapper has picked up their order. They’ll reach in",
-      highlight: "15 minutes!",
-      time: "1d ago",
-    },
-    {
-      emoji: "🍜", // Emoji replacement for "ramen.png"
-      message: "Is your name Ramen? Because you make my taste buds go wild <3",
-      time: "1d ago",
-    },
-    {
-      emoji: "💪", // Emoji replacement for "protein.png"
-      message: "Your protein goal for the day has not been met yet! Order asap~",
-      time: "20m ago",
-    },
-    {
-      emoji: "🔥", // Emoji replacement for "activity-icon.png"
-      message: "You haven’t been active in 3 days, Let’s change that",
-      time: "8hours ago",
-    },
-    {
-      emoji: "👑", // Emoji replacement for "wallet-icon.png"
-      message: "You have 25 points in your wallet. Redeem kardo!",
-      time: "1w ago",
-    },
-  ];
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Query orders for the current user that have been accepted
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      where('userId', '==', currentUser.uid),
+      where('status', '==', 'accepted')
+    );
+
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const ordersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setOrders(ordersData);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    return date.toLocaleString();
+  };
+
+  const formatOrderItems = (items) => {
+    if (!items || !items.length) return '';
+    return items.map(item => `${item.quantity}x ${item.title}`).join(', ');
+  };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerText}>NOTIFICATIONS</Text>
+        <Text style={styles.headerText}>YOUR ORDERS</Text>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
           <Text style={styles.closeButtonText}>×</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Notifications List */}
       <ScrollView style={styles.notificationsList}>
-        {notifications.map((notification, index) => (
-          <View key={index} style={styles.notificationItem}>
-            <Text style={styles.emoji}>{notification.emoji}</Text>
-            <View style={styles.textContainer}>
-              <Text style={styles.notificationMessage}>
-                {notification.message}{" "}
-                {notification.highlight && <Text style={styles.highlight}>{notification.highlight}</Text>}
+        {orders.map((order) => (
+          <View key={order.id} style={styles.notificationItem}>
+            <View style={styles.orderHeader}>
+              <Text style={styles.restaurantName}>{order.restaurantName}</Text>
+              <Text style={styles.orderTotal}>₹{order.total}</Text>
+            </View>
+            
+            <View style={styles.orderDetails}>
+              <Text style={styles.itemsList}>
+                {formatOrderItems(order.items)}
               </Text>
-              <Text style={styles.time}>{notification.time}</Text>
+              <Text style={styles.location}>📍 {order.location}</Text>
+              <View style={styles.timeContainer}>
+                <Text style={styles.orderTime}>
+                  Ordered: {formatDate(order.orderDate)}
+                </Text>
+                <Text style={styles.acceptedTime}>
+                  Accepted: {formatDate(order.acceptedAt)}
+                </Text>
+              </View>
             </View>
           </View>
         ))}
+        
+        {orders.length === 0 && (
+          <Text style={styles.noOrders}>No accepted orders found</Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -66,60 +86,81 @@ const Notification = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#2C2C2C", // Dark background
+    backgroundColor: '#2C2C2C',
     padding: 16,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   headerText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 22,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   closeButton: {
     padding: 5,
   },
   closeButtonText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   notificationsList: {
     flex: 1,
   },
   notificationItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#3E3E3E", // Slightly lighter background for notification cards
+    backgroundColor: '#3E3E3E',
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
     marginBottom: 12,
   },
-  emoji: {
-    fontSize: 24, // Emoji size
-    marginRight: 16,
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  textContainer: {
-    flex: 1,
+  restaurantName: {
+    color: '#FFD700',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  notificationMessage: {
-    color: "#FFFFFF",
+  orderTotal: {
+    color: '#4CAF50',
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: 'bold',
   },
-  highlight: {
-    color: "#FFD700", // Yellow for highlights
-    fontWeight: "bold",
+  orderDetails: {
+    gap: 4,
   },
-  time: {
-    color: "#A9A9A9", // Gray for time
+  itemsList: {
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  location: {
+    color: '#A9A9A9',
+    fontSize: 14,
+  },
+  timeContainer: {
+    marginTop: 8,
+  },
+  orderTime: {
+    color: '#A9A9A9',
     fontSize: 12,
-    marginTop: 4,
   },
+  acceptedTime: {
+    color: '#A9A9A9',
+    fontSize: 12,
+  },
+  noOrders: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+  }
 });
 
 export default Notification;

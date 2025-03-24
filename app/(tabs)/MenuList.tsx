@@ -22,7 +22,7 @@ const MenuList = () => {
   const [menuExists, setMenuExists] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   
-  const { restaurantId } = useLocalSearchParams();
+  const { restaurantId,name } = useLocalSearchParams();
   const router = useRouter();
   const { cartItems, addToCart: addItemToCart } = useCart();
 
@@ -90,7 +90,9 @@ const MenuList = () => {
     router.push({
       pathname: '/Ordersummarycard',
       params: {
-        items: JSON.stringify(cartItems)
+        items: JSON.stringify(cartItems),
+        restaurantId: restaurantId as string,
+        name: name as string
       }
     });
   };
