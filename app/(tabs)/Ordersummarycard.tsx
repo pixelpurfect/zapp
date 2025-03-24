@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Image,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -16,12 +15,47 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCart } from "@/components/CartProvider";
 import { useAuth } from '@/components/AuthContext';
 import RecommendPage from "@/components/RecommendPage";
+import { 
+  doc, 
+  getDoc, 
+  collection, 
+  addDoc, 
+  updateDoc,
+  serverTimestamp,
+  Timestamp 
+} from 'firebase/firestore';
+import { db } from '../../firebase/Config';
+import { StyleSheet } from "react-native";
 
-// LocationPopup Component
+// Interface definitions
 interface LocationPopupProps {
   visible: boolean;
   onClose: () => void;
   onLocationSubmit: (location: string) => void;
+}
+
+interface OrderItem {
+  id: number;
+  image: string;
+  title: string;
+  weight: string;
+  description: string;
+  rating: number;
+  price: number;
+  quantity: number;
+}
+
+interface OrderData {
+  items: OrderItem[];
+  restaurantId: string;
+  restaurantName: string;
+  userId: string;
+  userEmail: string;
+  totalAmount: number;
+  deliveryLocation: string;
+  status: 'pending';
+  createdAt: Timestamp | null;
+  updatedAt?: Timestamp | null;
 }
 
 const LocationPopup: React.FC<LocationPopupProps> = ({ visible, onClose, onLocationSubmit }) => {
@@ -59,29 +93,52 @@ const LocationPopup: React.FC<LocationPopupProps> = ({ visible, onClose, onLocat
   );
 };
 
-type OrderItem = {
-  id: number;
-  image: string;
-  title: string;
-  weight: string;
-  description: string;
-  rating: number;
-  price: number;
-  quantity: number;
-};
-
 const OrderSummaryCard: React.FC = () => {
   const params = useLocalSearchParams();
   const router = useRouter();
   const { cartItems: orderItems, updateQuantity, clearCart } = useCart();
-  const { user, isAuthenticated, login, placeOrder, userLocation, setUserLocation } = useAuth();
+  const { user, isAuthenticated, login, userLocation, setUserLocation } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [showLocationPopup, setShowLocationPopup] = useState(false);
-   
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Handle login
+  const restaurantId = params.restaurantId as string;
+  const restaurantName = params.name as string;
+
+
+
+  const updateExistingOrder = async (orderId: string, orderData: Partial<OrderData>) => {
+    try {
+      const orderRef = doc(db, "orders", orderId);
+      await updateDoc(orderRef, {
+        ...orderData,
+        updatedAt: serverTimestamp()
+      });
+      return true;
+    } catch (error) {
+      console.error("Error updating order:", error);
+      throw new Error("Failed to update order");
+    }
+  };
+
+  const createNewOrder = async (orderData: Omit<OrderData, 'createdAt'>) => {
+    try {
+      const ordersRef = collection(db, "orders");
+      const newOrderData = {
+        ...orderData,
+        createdAt: serverTimestamp()
+      };
+      
+      const orderDoc = await addDoc(ordersRef, newOrderData);
+      return orderDoc.id;
+    } catch (error) {
+      console.error("Error creating order:", error);
+      throw new Error("Failed to create order");
+    }
+  };
+
   const handleLogin = async () => {
     try {
       await login(email, password);
@@ -91,68 +148,96 @@ const OrderSummaryCard: React.FC = () => {
     }
   };
 
-  // Increment and decrement item quantity
-  const incrementQuantity = (id: number) => {
-    const item = orderItems.find((item) => item.id === id);
-    if (item) {
-      updateQuantity(id, item.quantity + 1);
-    }
-  };
+  
 
-  const decrementQuantity = (id: number) => {
-    const item = orderItems.find((item) => item.id === id);
-    if (item && item.quantity > 1) {
-      updateQuantity(id, item.quantity - 1);
-    }
-  };
+  const incrementQuantity = (id: number) => {
+  const item = orderItems.find((item) => item.id === id);
+  if (item) {
+    // Using the actual quantity instead of id
+    const newQuantity = item.quantity + 1;
+    updateQuantity(id, newQuantity); // Updates the quantity state in CartProvider
+  }
+};
+
+const decrementQuantity = (id: number) => {
+  const item = orderItems.find((item) => item.id === id);
+  if (item && item.quantity > 1) {
+    // Using the actual quantity instead of id
+    const newQuantity = item.quantity - 1;
+    updateQuantity(id, newQuantity); // Updates the quantity state in CartProvider
+  }
+};
+  
 
   const totalPrice = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const deliveryCharge = totalPrice * 0.1;
   const finalAmount = totalPrice + deliveryCharge;
 
-  // Handle payment and order placement
   const handlePay = async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       Alert.alert("Error", "Please login to place an order.");
       return;
     }
-
+  
     if (!userLocation) {
       setShowLocationPopup(true);
       return;
     }
 
+    if (!restaurantName) {
+      Alert.alert("Error", "Restaurant information is missing.");
+      return;
+    }
+  
     try {
+      setIsUpdating(true);
+
       const formattedOrderItems = orderItems.map(item => ({
+        description: item.description,
         id: item.id,
-        title: item.title,
+        image: item.image,
         price: item.price,
         quantity: item.quantity,
-        description: item.description,
-        image: item.image,
         rating: item.rating,
+        title: item.title,
         weight: item.weight
       }));
 
-      const orderId = await placeOrder(formattedOrderItems, finalAmount);
-      clearCart();
-      
-      Alert.alert(
-        "Order Placed Successfully",
-        `Your order ID is: ${orderId}\nDelivery Location: ${userLocation}\nTotal Amount: ₹${finalAmount.toFixed(2)}`,
-        [
-          {
-            text: "OK",
-            onPress: () => router.push("/HomeScreen")
-          }
-        ]
-      );
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
+      // Updated order data structure
+      const orderData = {
+        email: user.email || '',
+        items: formattedOrderItems,
+        location: userLocation,
+        orderDate: serverTimestamp(),
+        total: finalAmount,
+        userId: user.uid,
+        restaurantId: restaurantId,  // Add restaurantId
+        restaurantName: restaurantName  // Use restaurantName from params
+      };
+
+      try {
+        const ordersRef = collection(db, "orders");
+        const orderDoc = await addDoc(ordersRef, orderData);
+        
+        if (orderDoc.id) {
+          clearCart();
+          Alert.alert(
+            "Order Placed Successfully",
+            `Order ID: ${orderDoc.id}\nRestaurant: ${restaurantName}\nDelivery Location: ${userLocation}\nTotal Amount: ₹${finalAmount.toFixed(2)}`,
+            [{ text: "OK", onPress: () => router.push("/HomeScreen") }]
+          );
+        }
+      } catch (error) {
+        console.error("Firebase error:", error);
+        Alert.alert("Error", "Failed to save order to database. Please try again.");
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+      Alert.alert("Error", "Failed to place order. Please try again.");
+    } finally {
+      setIsUpdating(false);
     }
   };
-
-  // Handle back navigation
   const handleBack = () => {
     const from = params.from as string;
     if (from === "MenuList") {
@@ -162,6 +247,7 @@ const OrderSummaryCard: React.FC = () => {
     }
   };
 
+  
   if (orderItems.length === 0) {
     return (
       <View style={styles.container}>
@@ -180,22 +266,23 @@ const OrderSummaryCard: React.FC = () => {
       </TouchableOpacity>
 
       <Text style={styles.header}>Your Cart</Text>
+      
       <ScrollView style={styles.scrollView}>
         {!isAuthenticated ? (
           <View style={styles.authContainer}>
             <TextInput
+              style={styles.input}
               value={email}
               onChangeText={setEmail}
               placeholder="Enter Email"
               keyboardType="email-address"
-              style={styles.input}
             />
             <TextInput
+              style={styles.input}
               value={password}
               onChangeText={setPassword}
               placeholder="Enter Password"
               secureTextEntry
-              style={styles.input}
             />
             {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
             <Button title="Login" onPress={handleLogin} />
@@ -205,40 +292,48 @@ const OrderSummaryCard: React.FC = () => {
           </View>
         ) : (
           <>
-            {orderItems.map((item) => (
-              <View key={item.id} style={styles.card}>
-                <Image source={{ uri: item.image }} style={styles.image} />
-                <View style={styles.detailsContainer}>
-                  <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.weight}>{item.weight}</Text>
-                  <Text style={styles.description} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                  <View style={styles.footer}>
-                    <View style={styles.ratingContainer}>
-                      <FontAwesome name="star" size={16} color="#f0c02f" />
-                      <Text style={styles.rating}>{item.rating}</Text>
-                    </View>
-                    <View style={styles.quantityContainer}>
-                      <TouchableOpacity
-                        onPress={() => decrementQuantity(item.id)}
-                        style={styles.quantityButton}
-                      >
-                        <Text style={styles.quantityButtonText}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.quantity}>{item.quantity}</Text>
-                      <TouchableOpacity
-                        onPress={() => incrementQuantity(item.id)}
-                        style={styles.quantityButton}
-                      >
-                        <Text style={styles.quantityButtonText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.price}>₹{(item.price * item.quantity).toFixed(2)}</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
+            {orderItems.map((item,index) => (
+  <View key={item.id} style={styles.card}>
+    <Image source={{ uri: item.image }} style={styles.image} />
+    <View style={styles.detailsContainer}>
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.weight}>{item.weight}</Text>
+      <Text style={styles.description} numberOfLines={2}>
+        {item.description}
+      </Text>
+      <View style={styles.footer}>
+        <View style={styles.ratingContainer}>
+          <FontAwesome name="star" size={16} color="#f0c02f" />
+          <Text style={styles.rating}>{item.rating}</Text>
+        </View>
+        <View style={styles.quantityContainer}>
+          <TouchableOpacity 
+            style={styles.quantityButton} 
+            onPress={() => {
+              if (item.quantity > 1) {
+                updateQuantity(item.id, item.quantity - 1);
+              }
+            }}
+          >
+            <Text style={styles.quantityButtonText}>-</Text>
+          </TouchableOpacity>
+          <Text style={styles.quantity}>{item.quantity}</Text>
+          <TouchableOpacity 
+            style={styles.quantityButton} 
+            onPress={() => {
+              updateQuantity(item.id, item.quantity + 1);
+            }}
+          >
+            <Text style={styles.quantityButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.price}>
+          ₹{(item.price * item.quantity).toFixed(2)}
+        </Text>
+      </View>
+    </View>
+  </View>
+))}
           </>
         )}
 
@@ -255,17 +350,25 @@ const OrderSummaryCard: React.FC = () => {
         <RecommendPage />
 
         <View style={styles.summaryContainer}>
-          <Text style={styles.summaryText}>Food Cost: ₹{totalPrice.toFixed(2)}</Text>
-          <Text style={styles.summaryText}>Delivery Charge: ₹{deliveryCharge.toFixed(2)}</Text>
+          <Text style={styles.summaryText}>
+            Food Cost: ₹{totalPrice.toFixed(2)}
+          </Text>
+          <Text style={styles.summaryText}>
+            Delivery Charge: ₹{deliveryCharge.toFixed(2)}
+          </Text>
           <Text style={[styles.summaryText, styles.totalText]}>
             Total: ₹{finalAmount.toFixed(2)}
           </Text>
         </View>
 
         {isAuthenticated && (
-          <TouchableOpacity style={styles.payButton} onPress={handlePay}>
+          <TouchableOpacity
+            style={[styles.payButton, isUpdating && styles.payButtonDisabled]}
+            onPress={handlePay}
+            disabled={isUpdating}
+          >
             <Text style={styles.payButtonText}>
-              PAY ₹{finalAmount.toFixed(2)}
+              {isUpdating ? "Processing..." : `PAY ₹${finalAmount.toFixed(2)}`}
             </Text>
           </TouchableOpacity>
         )}
@@ -312,6 +415,10 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
+  },
+  payButtonDisabled: {
+    backgroundColor: '#cccccc',
+    opacity: 0.7,
   },
   detailsContainer: {
     flex: 1,

@@ -4,6 +4,7 @@ import { Dimensions, StyleSheet, View, SafeAreaView } from 'react-native';
 import { CartProvider } from '@/components/CartProvider';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '@/components/AuthContext';
+import { NotificationProvider } from '@/components/NotificationContext';
 
 // Importing Expo Notifications and Firebase config
 // import * as Notifications from 'expo-notifications';
@@ -57,6 +58,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <NotificationProvider>
       <AuthProvider>
         <CartProvider>
           <SafeAreaView style={styles.container}>
@@ -114,6 +116,7 @@ export default function RootLayout() {
           </SafeAreaView>
         </CartProvider>
       </AuthProvider>
+      </NotificationProvider>
     </GestureHandlerRootView>
   );
 }

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
-// Define types
 interface CartItem {
   id: number;
   image: string;
@@ -20,66 +19,66 @@ interface CartContextType {
   clearCart: () => void;
 }
 
-// Create context
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Create provider component
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   const addToCart = useCallback((newItem: CartItem) => {
-    setCartItems(currentItems => {
-      const existingItem = currentItems.find(item => item.id === newItem.id);
+    setCartItems(prevItems => {
+      const existingItemIndex = prevItems.findIndex(item => item.id === newItem.id);
       
-      if (existingItem) {
-        return currentItems.map(item =>
-          item.id === newItem.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+      if (existingItemIndex !== -1) {
+        const updatedItems = [...prevItems];
+        updatedItems[existingItemIndex] = {
+          ...prevItems[existingItemIndex],
+          quantity: prevItems[existingItemIndex].quantity + 1
+        };
+        return updatedItems;
       }
       
-      return [...currentItems, newItem];
+      return [...prevItems, { ...newItem, quantity: 1 }];
     });
   }, []);
 
-  const updateQuantity = useCallback((id: number, quantity: number) => {
-    setCartItems(currentItems =>
-      currentItems.map(item =>
-        item.id === id ? { ...item, quantity } : item
-      )
-    );
+  const updateQuantity = useCallback((id: number, newQuantity: number) => {
+    setCartItems(prevItems => {
+      return prevItems.map(item => {
+        if (item.id === id) {
+          return {
+            ...item,
+            quantity: Math.max(1, newQuantity) // Ensure quantity never goes below 1
+          };
+        }
+        return item;
+      });
+    });
   }, []);
 
   const removeFromCart = useCallback((id: number) => {
-    setCartItems(currentItems =>
-      currentItems.filter(item => item.id !== id)
-    );
+    setCartItems(prevItems => prevItems.filter(item => item.id !== id));
   }, []);
 
   const clearCart = useCallback(() => {
     setCartItems([]);
   }, []);
 
-  const value = {
-    cartItems,
-    addToCart,
-    updateQuantity,
-    removeFromCart,
-    clearCart
-  };
-
   return (
-    <CartContext.Provider value={value}>
+    <CartContext.Provider value={{
+      cartItems,
+      addToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart
+    }}>
       {children}
     </CartContext.Provider>
   );
 };
 
-// Create hook for using cart context
 export const useCart = () => {
   const context = useContext(CartContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useCart must be used within a CartProvider');
   }
   return context;
