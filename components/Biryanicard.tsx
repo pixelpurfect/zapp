@@ -1,234 +1,134 @@
-import React, { useState } from "react";
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import React from 'react';
+import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Animated } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 
-type FoodItem = {
-  id: number;
-  image: string;
-  subtitle: string;
-  title: string;
-  description: string;
-  rating: number;
-  price: number;
-};
+const BiryaniCardScreen: React.FC = () => {
+  // Animated component to add a floating effect for the button
+  const floatingButton = new Animated.Value(0);
 
-type CartItem = {
-  id: number;
-  title: string;
-  price: number;
-  quantity: number;
-};
+  const animateButton = () => {
+    Animated.sequence([
+      Animated.timing(floatingButton, {
+        toValue: 10,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(floatingButton, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
-// BiryaniCard Component
-const BiryaniCard: React.FC<{
-  item: FoodItem;
-  onAddToCart: (item: FoodItem) => void;
-}> = ({ item, onAddToCart }) => {
   return (
-    <View style={styles.card}>
-      {/* Image */}
-      <Image source={{ uri: item.image }} style={styles.image} />
-      {/* Text Content */}
-      <View style={styles.textContainer}>
-        {/* Title */}
-        <Text style={styles.subtitle}>{item.subtitle}</Text>
-        <Text style={styles.title}>{item.title}</Text>
-        {/* Description */}
-        <Text style={styles.description}>{item.description}</Text>
-        {/* Rating, Price, and Add Button */}
-        <View style={styles.footer}>
-          {/* Rating */}
-          <View style={styles.rating}>
-            <FontAwesome name="star" size={18} color="#f0c02f" />
-            <Text style={styles.ratingText}>{item.rating}</Text>
+    <View style={styles.container}>
+      {/* Background Image with Gradient */}
+      <ImageBackground
+        source={{ uri: 'https://via.placeholder.com/800x400' }} // Replace with actual background image URL
+        style={styles.backgroundImage}
+        imageStyle={styles.imageStyle}
+      >
+        <View style={styles.overlay}></View>
+
+        {/* Main Content */}
+        <View style={styles.content}>
+          {/* App Headline */}
+          <Text style={styles.headline}>
+            Discover the Best Biryani in Town
+          </Text>
+          
+          {/* App Features (Icons or Text) */}
+          <View style={styles.features}>
+            <View style={styles.feature}>
+              <FontAwesome name="location-arrow" size={24} color="#fff" />
+              <Text style={styles.featureText}>Find Nearby Biryani</Text>
+            </View>
+            <View style={styles.feature}>
+              <FontAwesome name="cutlery" size={24} color="#fff" />
+              <Text style={styles.featureText}>Delicious Options</Text>
+            </View>
+            <View style={styles.feature}>
+              <FontAwesome name="credit-card" size={24} color="#fff" />
+              <Text style={styles.featureText}>Secure Payments</Text>
+            </View>
           </View>
-          {/* Price */}
-          <Text style={styles.price}>{`₹${item.price} /-`}</Text>
-          {/* Add to Cart Button */}
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => onAddToCart(item)}
+
+          {/* Call-to-action Button */}
+          <Animated.View
+            style={[styles.floatingButton, { transform: [{ translateY: floatingButton }] }]}
           >
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={animateButton}>
+              <Text style={styles.buttonText}>Start Ordering</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
-      </View>
+      </ImageBackground>
     </View>
   );
 };
 
-// Ordersummarycard Component
-
-
-// BiryaniCardScreen
-const BiryaniCardScreen: React.FC = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-
-  const biryaniData: FoodItem[] = [
-    {
-      id: 1,
-      image: "https://via.placeholder.com/100",
-      subtitle: "CLASSIC BIRYANI, JAVA GREEN",
-      title: "Chicken Biryani",
-      description:
-        "Fluffy basmati rice layered over tender & succulent pieces of meat, accompanied with the mesmerizing aromas of spices, herbs & caramelized onions.",
-      rating: 4.5,
-      price: 100,
-    },
-    {
-      id: 2,
-      image: "https://via.placeholder.com/100",
-      subtitle: "CLASSIC BIRYANI, JAVA GREEN",
-      title: "Mutton Biryani",
-      description:
-        "Tender mutton pieces cooked to perfection in layers of fragrant basmati rice, infused with aromatic spices and herbs.",
-      rating: 4.7,
-      price: 180,
-    },
-    {
-      id: 3,
-      image: "https://via.placeholder.com/100",
-      subtitle: "CLASSIC BIRYANI, JAVA GREEN",
-      title: "Veg Biryani",
-      description:
-        "A vegetarian delight with mixed vegetables cooked in layers of basmati rice, delicately spiced and topped with caramelized onions.",
-      rating: 4.3,
-      price: 90,
-    },
-  ];
-
-  const handleAddToCart = (item: FoodItem) => {
-    setCartItems((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
-      if (existingItem) {
-        return prevCart.map((cartItem) =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        );
-      } else {
-        return [...prevCart, { id: item.id, title: item.title, price: item.price, quantity: 1 }];
-      }
-    });
-    Alert.alert("Added to Cart", `${item.title} has been added to your cart.`);
-  };
-
-  return (
-    <ScrollView style={styles.screenContainer}>
-      {biryaniData.map((item) => (
-        <BiryaniCard key={item.id} item={item} onAddToCart={handleAddToCart} />
-      ))}
-    </ScrollView>
-  );
-};
-
 const styles = StyleSheet.create({
-  screenContainer: {
+  container: {
     flex: 1,
-    backgroundColor: "#f8f8f8",
-    padding: 10,
   },
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
+  backgroundImage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageStyle: {
     borderRadius: 10,
-    overflow: "hidden",
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 10,
-    elevation: 5,
-    position: "relative",
   },
-  image: {
-    width: 100,
-    height: 100,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
-  },
-  textContainer: {
-    flex: 1,
-    padding: 10,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: "#888",
-    fontWeight: "600",
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginVertical: 5,
-  },
-  description: {
-    fontSize: 12,
-    color: "#555",
-    marginVertical: 5,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  rating: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  ratingText: {
-    fontSize: 14,
-    color: "#333",
-    marginLeft: 5,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-    flex: 1,
-  },
-  addButton: {
-    backgroundColor: "#000",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  cartContainer: {
-    backgroundColor: "#fff",
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dark overlay to make text stand out
     borderRadius: 10,
-    padding: 10,
+  },
+  content: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  headline: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  features: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginBottom: 30,
+  },
+  feature: {
+    alignItems: 'center',
+  },
+  featureText: {
+    fontSize: 16,
+    color: '#fff',
+    marginTop: 5,
+  },
+  floatingButton: {
     marginTop: 20,
+    width: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 50,
+    backgroundColor: '#FF6347', // Button color
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    elevation: 5, // Add shadow for Android
   },
-  cartHeader: {
+  button: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  cartItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 5,
-  },
-  cartItemText: {
-    fontSize: 14,
-    color: "#555",
-  },
-  cartTotal: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 10,
-    textAlign: "right",
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });
 
